@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>GateKeeper</title>
+   <link rel="icon" type="image/png" href="images/clipart1018763.png">
+    <link rel="stylesheet" href="css/index.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.2.6/gsap.min.js"></script>
+	<meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script type="module">
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js'
+
+  const supabase = createClient(
+    'https://hoyigvtfrnxizngwaswf.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhveWlndnRmcm54aXpuZ3dhc3dmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQwNDIzNjYsImV4cCI6MjA1OTYxODM2Nn0.NqaeVsR2ucftGa-CoNpzADiAsd0SNeSkGKWSP3XOsIM'
+  );
+	window.supabase = supabase;
+
+
+  async function fetchRemoteSettings() {
+    const { data, error } = await supabase
+      .from('settings')
+      .select('blacklist_ips, honeypot_enabled')
+      .eq('id', 2)
+      .single();
+
+    if (error) {
+      console.error("Failed to fetch settings:", error);
+      return null;
+    }
+
+    return data;
+  }
+
+  async function addIPToBlacklist(ip) {
+    const { data, error } = await supabase
+      .from('settings')
+      .select('blacklist_ips')
+      .eq('id', 2)
+      .single();
+
+    if (error || !data) {
+      console.error("Error fetching blacklist for update:", error);
+      return;
+    }
+
+    let currentList = [];
+    try {
+      currentList = JSON.parse(data.blacklist_ips);
+      if (!Array.isArray(currentList)) currentList = [];
+    } catch (e) {
+      console.error("Invalid IP list format, resetting to new array.");
+    }
+
+    if (!currentList.includes(ip)) {
+      currentList.push(ip);
+      const { error: updateError } = await supabase
+        .from('settings')
+        .update({ blacklist_ips: JSON.stringify(currentList) })
+        .eq('id', 2);
+
+      if (updateError) {
+        console.error("Failed to update blacklist:", updateError);
+      } else {
+        console.log("IP added to blacklist:", ip);
+      }
+    }
+  }
+
+  function getUserIP(callback) {
+    fetch('https://api.ipify.org?format=json')
+      .then(res => res.json())
+      .then(data => callback(data.ip))
+      .catch(err => console.error('IP fetch error:', err));
+  }
+
+  function createHoneypot() {
+    if (document.getElementById('honeypot')) return;
+
+    const form = document.createElement('form');
+    form.style.display = 'none';
+
+    const honeypot = document.createElement('input');
+    honeypot.type = 'text';
+    honeypot.name = "honeypot";
+    honeypot.id = "honeypot";
+    honeypot.autocomplete = 'off';
+
+    form.appendChild(honeypot);
+    document.body.appendChild(form);
+  }
+
+  function verifyHoneypot(ip) {
+    setTimeout(() => {
+      const honeypot = document.getElementById("honeypot");
+      if (!honeypot) return;
+
+      if (honeypot.value.trim() !== "") {
+        console.warn("Bot activity detected from IP:", ip);
+        addIPToBlacklist(ip); // 👈 Add to Supabase blacklist
+        document.body.innerHTML = "<h1>Access Denied</h1><p>Suspicious activity detected. Your IP has been blacklisted.</p>";
+      } else {
+        document.cookie = "verified=true; path=/; max-age=300";
+        document.body.style.display = "block";
+      }
+    }, 3000);
+  }
+
+  function clearVerifiedCookie() {
+    document.cookie = "verified=; path=/; max-age=0";
+  }
+
+  document.addEventListener("DOMContentLoaded", async () => {
+    console.log("Loading remote settings...");
+    document.body.style.display = "none";
+    clearVerifiedCookie();
+
+    const remote = await fetchRemoteSettings();
+    if (!remote) {
+      document.body.innerHTML = "<h1>Error</h1><p>Could not load protection config.</p>";
+      return;
+    }
+
+    let ipList = [];
+    try {
+      ipList = JSON.parse(remote.blacklist_ips);
+    } catch (e) {
+      console.error("Invalid IP list format in DB:", e);
+    }
+
+    getUserIP((ip) => {
+      console.log("Your IP:", ip);
+
+      if (ipList.includes(ip)) {
+        document.body.innerHTML = "<h1>Access Denied</h1><p>Your IP is blacklisted.</p>";
+        return;
+      }
+
+      if (!document.cookie.includes("verified=true")) {
+        if (remote.honeypot_enabled) {
+          createHoneypot();
+          verifyHoneypot(ip); // 👈 Pass IP for dynamic blacklisting
+        } else {
+          console.log("Honeypot disabled. Skipping...");
+          document.body.style.display = "block";
+        }
+      } else {
+        document.body.style.display = "block";
+      }
+    });
+  });
+</script>
+
+
+
+
+
+
+
+
+
+
+    <style>
+        #content {
+            display: none; /* Hide content initially */
+        }
+    </style>
+</head>
+</head>
+<body>
+    <div id="all">
+        <div class="cursor"></div>
+        <div id="loader">
+            <span class="color">12+</span>Firewallls
+        </div>
+        <div id="breaker">
+        </div>
+        <div id="breaker-two">
+        </div>
+        <div id="navigation-content">
+            <div class="logo">
+                <img src="images/clipart1018763.png" alt="logo">
+            </div>
+            <div class="navigation-close">
+                <span class="close-first"></span>
+                <span class="close-second"></span>
+            </div>
+            <div class="navigation-links">
+                <a href="#" data-text="HOME" id="home-link" >HOME</a>
+		                    <a href="https://68209ea0279585e861b8012b--gleaming-mandazi-0b6b12.netlify.app/" data-text="BIO" id="home-link" >REGISTER BIO</a>
+            </div>
+        </div>
+        <div id="navigation-bar">
+            <img src="images/clipart1018763.png" alt="logo">
+            <div class="menubar">
+                <span class="first-span"></span>
+                <span class="second-span"></span>
+                <span class="third-span"></span>
+            </div>
+        </div>
+        <div id="header">
+            <div id="particles"></div>
+            <div class="social-media-links">
+               <a href="https://www.instagram.com/1x.ub_/"><img src="images/instagram logo.png" class="social-media" alt="instagram-logo"></a>
+            </div>
+            <div class="header-content">
+                <div class="header-content-box">
+                <div class="firstline"><span class="color">Gate</span>Keeper</div>
+                <div class="secondline">
+                This
+            <span class="txt-rotate color" data-period="1200"data-rotate='[ " Controls", " Protects", "is insane " ]'></span>
+            <span class="slash">|</span>
+        </div>
+                    <div class="contact">
+                <a href="mailto:sofiyasenthilkumar@gmail.com"><img src="images/mail.png" alt="email-pic" class="contactpic"></a>
+                <a href="Tel:7010516233"><img src="images/call.png" alt="phone-pic" class="contactpic"></a>
+                    </div>    
+            </div>
+            </div>
+        </div>
+        <div id="about">
+            <div class="color-changer">
+            <div class="color-panel">
+                <img src="images/gear.png" alt="">
+            </div>
+            
+
+
+    <script src="js/jquery.min.js"></script>
+    <script src="js/particles.js"></script>
+    <script src="js/particles.min.js"></script>
+    <script src="js/index.js"></script>
+    <script>
+  particlesJS("particles", {"particles":{"number":{"value":40,"density":{"enable":true,"value_area":800}},"color":{"value":"#ffffff"},"shape":{"type":"circle","stroke":{"width":0,"color":"#000000"},"polygon":{"nb_sides":5},"image":{"src":"img/github.svg","width":100,"height":100}},"opacity":{"value":0.5,"random":false,"anim":{"enable":false,"speed":1,"opacity_min":0.1,"sync":false}},"size":{"value":3,"random":true,"anim":{"enable":false,"speed":40,"size_min":0.1,"sync":false}},"line_linked":{"enable":true,"distance":150,"color":"#ffffff","opacity":0.4,"width":1},"move":{"enable":true,"speed":6,"direction":"none","random":false,"straight":false,"out_mode":"out","bounce":false,"attract":{"enable":false,"rotateX":600,"rotateY":1200}}},"interactivity":{"detect_on":"canvas","events":{"onhover":{"enable":true,"mode":"repulse"},"onclick":{"enable":true,"mode":"push"},"resize":true},"modes":{"grab":{"distance":400,"line_linked":{"opacity":1}},"bubble":{"distance":400,"size":40,"duration":2,"opacity":8,"speed":3},"repulse":{"distance":200,"duration":0.4},"push":{"particles_nb":4},"remove":{"particles_nb":2}}},"retina_detect":true});
+    </script>
+	<script type="module">
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js'
+
+
+  const supabase = createClient(
+  'https://hoyigvtfrnxizngwaswf.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhveWlndnRmcm54aXpuZ3dhc3dmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQwNDIzNjYsImV4cCI6MjA1OTYxODM2Nn0.NqaeVsR2ucftGa-CoNpzADiAsd0SNeSkGKWSP3XOsIM'
+);
+window.supabase = supabase;
+
+
+  async function checkProtectStatus() {
+    const { data, error } = await supabase
+      .from('settings')
+      .select('protect')
+      .eq('id', 1)
+      .single();
+
+    if (error) {
+      console.error("Error fetching protect value:", error);
+      return;
+    }
+
+    if (data.protect && !window._protectionActive) {
+      window._protectionActive = true;
+      disableRightClick();
+      activateProctedMode();
+    }
+  }
+
+  setInterval(checkProtectStatus, 5000); // every 5 seconds
+
+  function disableRightClick() {
+    document.addEventListener("contextmenu", e => e.preventDefault());
+    console.log("Right-click disabled.");
+  }
+
+  let fullscreenTriggered = false;
+
+function activateProctedMode() {
+  console.log("%c🚨 GateKeeper Procted Mode Activated", "color: red; font-weight: bold;");
+
+  if (!fullscreenTriggered) {
+    document.addEventListener("click", () => {
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {});
+        fullscreenTriggered = true;
+      }
+    }, { once: true }); // Only once
+  }
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) location.href = "/404.html";
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") location.href = "/404.html";
+  });
+}
+
+</script>
+
+
+
+		    
+
+</body>
+</html>

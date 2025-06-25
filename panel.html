@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>GateKeeper Controller</title>
+  <script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js'
+
+    const supabaseUrl = 'https://hoyigvtfrnxizngwaswf.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhveWlndnRmcm54aXpuZ3dhc3dmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQwNDIzNjYsImV4cCI6MjA1OTYxODM2Nn0.NqaeVsR2ucftGa-CoNpzADiAsd0SNeSkGKWSP3XOsIM';
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    async function toggleProtection() {
+      const { data: current, error } = await supabase
+        .from('settings')
+        .select('protect')
+        .eq('id', 1)
+        .single();
+
+      if (error) {
+        alert("Error reading current state.");
+        console.error(error);
+        return;
+      }
+
+      const newStatus = !current.protect;
+
+      const { error: updateError } = await supabase
+        .from('settings')
+        .update({ protect: newStatus })
+        .eq('id', 1);
+
+      if (updateError) {
+        alert("Error updating status.");
+        console.error(updateError);
+        return;
+      }
+
+      updateUI(newStatus);
+    }
+
+    async function updateUI(currentStatus) {
+      const statusText = document.getElementById("status");
+      const toggleBtn = document.getElementById("toggleBtn");
+
+      statusText.textContent = currentStatus ? "🛡️ Protected Mode: ON" : "🔓 Protected Mode: OFF";
+      toggleBtn.textContent = currentStatus ? "Turn OFF" : "Turn ON";
+      toggleBtn.style.backgroundColor = currentStatus ? "red" : "green";
+    }
+
+    async function init() {
+      const { data, error } = await supabase
+        .from('settings')
+        .select('protect')
+        .eq('id', 1)
+        .single();
+
+      if (error) {
+        alert("Failed to fetch initial status.");
+        console.error(error);
+        return;
+      }
+
+      updateUI(data.protect);
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("toggleBtn").addEventListener("click", toggleProtection);
+      init();
+    });
+  </script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #111;
+      color: white;
+      text-align: center;
+      padding-top: 100px;
+    }
+
+    #toggleBtn {
+      padding: 15px 30px;
+      font-size: 18px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      color: white;
+      margin-top: 20px;
+    }
+
+    #status {
+      font-size: 24px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧠 GateKeeper Control Panel</h1>
+  <div id="status">Loading status...</div>
+  <button id="toggleBtn">Toggle</button>
+</body>
+</html>
